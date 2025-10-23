@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <title>Clasificador de toxicidad (mínimo)</title>
+</head>
+<body>
+  <h1>Clasificador de toxicidad</h1>
+  <p>Umbral fijo: <strong>0.9</strong></p>
+
+  <textarea id="t" rows="3" cols="70"></textarea>
+  <button id="b">Clasificar</button>
+
+  <table id="tbl" border="1" cellpadding="6" cellspacing="0">
+    <thead>
+      <tr>
+        <th>Etiqueta</th>
+        <th>Prob. tóxico</th>
+        <th>Match (≥ 0.9)</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+
+  <!-- Dependencias mínimas -->
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4/dist/tf.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/toxicity"></script>
+
+  <script>
+    // Mínimo indispensable: cargar el modelo con threshold=0.9 y clasificar el texto
+    const threshold = 0.9;
+    let model;
+
+    toxicity.load(threshold).then(m => { model = m; });
+
+    document.getElementById('b').addEventListener('click', async () => {
+      if (!model) return; // espera a que cargue
+      const text = document.getElementById('t').value.trim();
+      if (!text) return;
+      const predictions = await model.classify([text]);
+      const tbody = document.querySelector('#tbl tbody');
+      tbody.innerHTML = '';
+      predictions.forEach(p => {
+        const r = p.results[0];
+        const probs = r.probabilities; // [no tóxico, tóxico]
+        const toxicProb = probs.dataSync ? probs.dataSync()[1] : probs[1];
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<td>${p.label}</td><td>${(toxicProb*100).toFixed(1)}%</td><td>${r.match ? '✔' : '✖'}</td>`;
+        tbody.appendChild(tr);
+      });
+    });
+  </script>
+</body>
+</html>
